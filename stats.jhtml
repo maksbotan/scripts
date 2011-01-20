@@ -1,0 +1,32 @@
+<html>
+<head>
+    <title>Статистика онлайна ВКонтакте</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <style type="text/css">
+        table {
+            background-color: #F4F8FE;
+            color: #2291BE;
+        }
+        tr:hover {
+            color: #F6921E;
+        }
+    </style>
+</head>
+<body>
+    {% for log in logs %}
+    <h1>{{ log.date }}</h1>
+    <table border="0">
+        {% for person in log.log %}
+        {% if person[1] != '0:00:00' %}
+        <tr>
+            <td>{{ person[0] }}</td>
+            <td>{{ person[1] }}</td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+    </table>
+    {% endfor %}
+</body>
+</html>
+<!-- vim: ft=htmldjango
+--!>
