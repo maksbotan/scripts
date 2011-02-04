@@ -25,10 +25,11 @@ class VkSpy:
         except:
             print 'Cannot auth! Aborting...'
 
+        self.client.RegisterHandler('iq', self.iq)
+
         self.roster = self.client.getRoster()
 
         self.client.RegisterHandler('presence', self.xmpp_presence)
-        self.client.RegisterHandler('iq', self.iq)
 
         if os.path.exists('/home/maksbotan/log.json'):
             print 'Log exists'
@@ -58,6 +59,19 @@ class VkSpy:
         if len(child) == 1 and child[0].getName() == 'ping':
             print 'Sending PONG'
             res = event.buildReply('result')
+            self.client.send(res)
+            raise xmpp.protocol.NodeProcessed()
+
+        if event.getQueryNS() == 'jabber:iq:version':
+            print 'Sending Version'
+            res = event.buildReply('result')
+            q = xmpp.protocol.Node('query', {'xmlns': 'jabber:iq:version'})
+            q.addChild('name', payload=['vk_spy'])
+            q.addChild('version', payload=['0.1'])
+            q.addChild('os', payload=['Linux 2.6'])
+
+            res.setQueryPayload(q.getPayload())
+
             self.client.send(res)
             raise xmpp.protocol.NodeProcessed()
 
