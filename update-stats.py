@@ -12,7 +12,7 @@ log_regex = re.compile(r'log.json-(\d{4}-\d{2}-\d{2})') #Regex for finding valid
 basedir = os.environ.get('HOME', '/home/maksbotan') #Dir with logs
 #Get all log files
 logfiles = [f for f in os.listdir(basedir) if log_regex.match(f)]
-
+logfiles.reverse()
 logs = []
 for logfile in logfiles:
     with open(os.path.join(basedir, logfile), 'r') as f:
