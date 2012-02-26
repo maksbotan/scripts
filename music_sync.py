@@ -42,6 +42,20 @@ class MusicDB():
 
         self.music_db.setdefault(song['artist'], {})[song['title']] = song
 
+    def add_song_by_path(self, path):
+        """Helper function for adding song to database. Reads tags and creates necessary object"""
+
+        tag = tagpy.FileRef(path.strip()).tag()
+        mtime = os.stat(path.strip()).st_mtime
+        sane_filename = sanitize_filename(str(tag.title.encode('utf-8'))) + '.mp3'
+        self.add_song({
+            'artist': tag.artist,
+            'title': tag.title,
+            'source_filename': path.strip().decode('utf-8'),
+            'mtime': mtime,
+            'sane_filename': sane_filename.decode('utf-8'),
+        })
+
     def get_song(self, song):
         """Search song in database"""
 
@@ -70,15 +84,10 @@ class MusicDB():
 
     def __iter__(self):
         """'for song in db' operator support"""
-        def generator():
-            """Generator object for iterating over database"""
-
-            for artist in self.music_db:
-                for song in self.music_db[artist].values():
-                    yield song
-            raise StopIteration
-
-        return generator()
+        for artist in self.music_db.values():
+            for song in artist.values():
+                yield song
+        raise StopIteration
 
     def diff(self, db, incremental=True):
         """Create new database containing songs that are present in self but not in db
@@ -146,20 +155,6 @@ class MusicDB():
 
             current_db.del_song(song)
 
-def add_song(path, db):
-    """Helper function for adding song to database. Reads tags and creates necessary object"""
-
-    tag = tagpy.FileRef(path.strip()).tag()
-    mtime = os.stat(path.strip()).st_mtime
-    sane_filename = sanitize_filename(str(tag.title.encode('utf-8'))) + '.mp3'
-    db.add_song({
-        'artist': tag.artist,
-        'title': tag.title,
-        'source_filename': path.strip().decode('utf-8'),
-        'mtime': mtime,
-        'sane_filename': sane_filename.decode('utf-8'),
-    })
-
 def build_target_db(source, playlists, additional):
     """Crawl through source and create music database"""
 
@@ -167,14 +162,13 @@ def build_target_db(source, playlists, additional):
     pwd = os.getcwd()
     os.chdir(source) #Hack to make os.walk return paths relative to source dir
 
-    for playlist in [f for f in os.listdir(playlists) if f.endswith('.m3u')]:
+    for playlist in (f for f in os.listdir(playlists) if f.endswith('.m3u')):
         #Load songs from mpd playlists
         songs = open(osp.join(playlists, playlist)).readlines()
         for song in songs:
-            add_song(song, target_db)
+            target_db.add_song_by_path(song)
 
-    additional_list = [x.strip() for x in open(additional)]
-    for record in additional_list:
+    for record in (x.strip() for x in open(additional)):
         #Load songs from additional list
         if osp.isdir(record):
             for path, _, filenames in os.walk(record):
@@ -182,11 +176,11 @@ def build_target_db(source, playlists, additional):
                     try:
                         #Test if file is audio
                         tagpy.FileRef(osp.join(path, filename))
-                        add_song(osp.join(path, filename), target_db)
+                        target_db.add_song_by_path(osp.join(path, filename))
                     except ValueError:
                         pass
         else:
-            add_song(record, target_db)
+            target_db.add_song_by_path(record)
 
     os.chdir(pwd)
     return target_db
