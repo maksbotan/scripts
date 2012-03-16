@@ -45,16 +45,19 @@ class MusicDB():
     def add_song_by_path(self, path):
         """Helper function for adding song to database. Reads tags and creates necessary object"""
 
-        tag = tagpy.FileRef(path.strip()).tag()
-        mtime = os.stat(path.strip()).st_mtime
-        sane_filename = sanitize_filename(str(tag.title.encode('utf-8'))) + '.mp3'
-        self.add_song({
-            'artist': tag.artist,
-            'title': tag.title,
-            'source_filename': path.strip().decode('utf-8'),
-            'mtime': mtime,
-            'sane_filename': sane_filename.decode('utf-8'),
-        })
+        if os.path.exists(path.strip()):
+            tag = tagpy.FileRef(path.strip()).tag()
+            mtime = os.stat(path.strip()).st_mtime
+            sane_filename = sanitize_filename(str(tag.title.encode('utf-8'))) + '.mp3'
+            self.add_song({
+                'artist': tag.artist,
+                'title': tag.title,
+                'source_filename': path.strip().decode('utf-8'),
+                'mtime': mtime,
+                'sane_filename': sane_filename.decode('utf-8'),
+            })
+        else:
+            print("Warning, file \"{}\" does not exist anymore".format(path.strip()))
 
     def get_song(self, song):
         """Search song in database"""
