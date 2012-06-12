@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 
+from __future__ import unicode_literals
+
 import json, argparse, os, sys, shutil, sndhdr
 import string, subprocess
 import os.path as osp
 from copy import deepcopy
 import tagpy
 
-safechars = '!#$%&()-@^_`{}~.\' ' + string.digits + string.ascii_letters
-allchars = string.maketrans('', '')
-deletions = ''.join(set(allchars) - set(safechars))
+forbidden_chars = '+,.;=[]*?<:>/\|"'
+table = dict((ord(c), '-') for c in forbidden_chars)
 
 def sanitize_filename(filename):
-    """Remove symbols not suitable for FAT filesystems from filename"""
+    """Replace symbols not suitable for FAT filesystems from filename with '-'"""
 
-    return string.translate(filename, allchars, deletions)
+    return filename.translate(table)
 
 def convert(source, destination, filename, dest_filename):
     """Use avconv to convert anything to mp3"""
@@ -48,13 +49,13 @@ class MusicDB():
         if os.path.exists(path.strip()):
             tag = tagpy.FileRef(path.strip()).tag()
             mtime = os.stat(path.strip()).st_mtime
-            sane_filename = sanitize_filename(str(tag.title.encode('utf-8'))) + '.mp3'
+            sane_filename = sanitize_filename(tag.title) + '.mp3'
             self.add_song({
                 'artist': tag.artist,
                 'title': tag.title,
                 'source_filename': path.strip().decode('utf-8'),
                 'mtime': mtime,
-                'sane_filename': sane_filename.decode('utf-8'),
+                'sane_filename': sane_filename,
             })
         else:
             print("Warning, file \"{}\" does not exist anymore".format(path.strip()))
@@ -118,7 +119,7 @@ class MusicDB():
         """Copy files in database to destination, converting them if needed and updating current_db"""
 
         for song in self:
-            print(u"Transfering \"{} - {}\" to destination".format(song['artist'], song['title']).encode('utf-8'))
+            print("Transferring \"{} - {}\" to destination".format(song['artist'], song['title']).encode('utf-8'))
             source_path = osp.join(source, song['source_filename']).encode('utf-8')
             path = osp.join(destination, song['artist'].encode('utf-8'))
             fullpath = osp.join(path, song['sane_filename'].encode('utf-8'))
@@ -147,7 +148,7 @@ class MusicDB():
 
         for song in self:
             print("Removing \"{} - {}\" from destination".format(song['artist'], song['title']).encode('utf-8'))
-            path = osp.join(destination, song['artist'].encode('utf-8'), song['sane_filename'].encode('utf-8'))
+            path = osp.join(destination, song['artist'], song['sane_filename'])
             if not dry:
                 os.remove(path)
                 try:
