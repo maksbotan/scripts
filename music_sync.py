@@ -57,6 +57,8 @@ class MusicDB():
                 'mtime': mtime,
                 'sane_filename': sane_filename,
             })
+            if not tag.artist or not tag.title:
+                print("Warning, {} has empty tags".format(path.strip()).encode('utf-8'))
         else:
             print("Warning, file \"{}\" does not exist anymore".format(path.strip()))
 
